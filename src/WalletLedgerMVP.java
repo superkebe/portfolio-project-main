@@ -12,7 +12,7 @@ import java.util.Objects;
  * Provide a main method that shows client style usage and value
  *
  * This file intentionally does not follow the full OSU component discipline
- * yet. Author : Isiaka Kebe
+ *  Author : Isiaka Kebe
  */
 public final class WalletLedgerMVP {
 
