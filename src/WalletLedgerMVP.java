@@ -8,10 +8,12 @@ import java.util.Objects;
  * Proof of Concept MVP for the WalletLedger component.
  *
  * Goals for this file 1 Select one component idea and justify it with real
- * world factors 2 Implement several different methods to prove feasibility 3
- * Provide a main method that shows client style usage and value
+ * world factors
  *
- * This file intentionally does not follow the full OSU component discipline
+ * 2 Implement several different methods to prove feasibility 3 Provide a main
+ * method that shows client style usage and value
+ *
+ *
  * Author : Isiaka Kebe
  */
 public final class WalletLedgerMVP {
@@ -69,6 +71,7 @@ public final class WalletLedgerMVP {
      * cents to keep math exact
      */
     private final Map<String, LedgerEntry> entriesById = new LinkedHashMap<>();
+    private long nextTransactionNumber = 1;
 
     /*
      * Kernel style methods from my design
@@ -81,9 +84,7 @@ public final class WalletLedgerMVP {
         validateAmountPositive(amountCents);
         Objects.requireNonNull(type, "type must not be null");
 
-        if (this.entriesById.containsKey(id)) {
-            throw new IllegalArgumentException("Duplicate entry id: " + id);
-        }
+        assert !this.entriesById.containsKey(id) : "Duplicate entry id: " + id;
 
         LedgerEntry entry = new LedgerEntry(id, amountCents, currency, type);
         this.entriesById.put(id, entry);
@@ -92,9 +93,7 @@ public final class WalletLedgerMVP {
     public void removeEntry(String id) {
         validateId(id);
         LedgerEntry removed = this.entriesById.remove(id);
-        if (removed == null) {
-            throw new IllegalArgumentException("No entry found for id: " + id);
-        }
+        assert removed != null : "No entry found for id: " + id;
     }
 
     public int entryCount() {
@@ -102,15 +101,14 @@ public final class WalletLedgerMVP {
     }
 
     public LedgerEntry removeAnyEntry() {
-        if (this.entriesById.isEmpty()) {
-            throw new IllegalStateException("Ledger is empty");
-        }
+        assert !this.entriesById.isEmpty() : "Ledger is empty";
         String firstKey = this.entriesById.keySet().iterator().next();
         return this.entriesById.remove(firstKey);
     }
 
     public void clear() {
         this.entriesById.clear();
+        this.nextTransactionNumber = 1;
     }
 
     /*
@@ -152,7 +150,7 @@ public final class WalletLedgerMVP {
     public void deposit(int amountCents, String currency) {
         validateCurrency(currency);
         validateAmountPositive(amountCents);
-        String id = generateId("dep");
+        String id = this.nextTransactionId("dep");
         this.addEntry(id, amountCents, currency, EntryType.CREDIT);
     }
 
@@ -160,12 +158,11 @@ public final class WalletLedgerMVP {
         validateCurrency(currency);
         validateAmountPositive(amountCents);
 
-        if (!this.hasSufficientFunds(amountCents, currency)) {
-            throw new IllegalStateException(
-                    "Insufficient funds for " + amountCents + " " + currency);
-        }
+        assert this.hasSufficientFunds(amountCents,
+                currency) : "Insufficient funds for " + amountCents + " "
+                        + currency;
 
-        String id = generateId("wd");
+        String id = this.nextTransactionId("wd");
         this.addEntry(id, amountCents, currency, EntryType.DEBIT);
     }
 
@@ -231,35 +228,30 @@ public final class WalletLedgerMVP {
      */
 
     private static void validateId(String id) {
-        if (id == null || id.trim().isEmpty()) {
-            throw new IllegalArgumentException("id must not be empty");
-        }
+        assert id != null && !id.trim().isEmpty() : "id must not be empty";
     }
 
     private static void validateCurrency(String currency) {
-        if (currency == null || currency.length() != 3) {
-            throw new IllegalArgumentException(
-                    "currency must be a 3 letter code like USD");
-        }
+        assert currency != null && currency
+                .length() == 3 : "currency must be a 3 letter code like USD";
         for (int i = 0; i < currency.length(); i++) {
             char c = currency.charAt(i);
             boolean upper = (c >= 'A' && c <= 'Z');
-            if (!upper) {
-                throw new IllegalArgumentException(
-                        "currency must be uppercase letters like USD");
-            }
+            assert upper : "currency must be uppercase letters like USD";
         }
     }
 
     private static void validateAmountPositive(int amountCents) {
-        if (amountCents <= 0) {
-            throw new IllegalArgumentException("amountCents must be positive");
-        }
+        assert amountCents > 0 : "amountCents must be positive";
     }
 
-    private static String generateId(String prefix) {
-        return prefix + "-" + System.currentTimeMillis() + "-"
-                + ((int) (Math.random() * 1_000_000));
+    private String nextTransactionId(String prefix) {
+        String id;
+        do {
+            id = prefix + "-" + this.nextTransactionNumber;
+            this.nextTransactionNumber++;
+        } while (this.entriesById.containsKey(id));
+        return id;
     }
 
     /*
