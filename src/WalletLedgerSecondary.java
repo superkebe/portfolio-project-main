@@ -1,7 +1,12 @@
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Secondary implementation of {@link WalletLedger}.
  *
- * Implements all enhanced methods using only kernel and Standard methods.
+ * Implements all enhanced-interface methods using only kernel and Standard
+ * methods.
  */
 public abstract class WalletLedgerSecondary implements WalletLedger {
 
@@ -24,6 +29,25 @@ public abstract class WalletLedgerSecondary implements WalletLedger {
     }
 
     /**
+     * Restores all entries from source into destination.
+     *
+     * @param source source ledger
+     * @param destination destination ledger
+     * @updates source, destination
+     * @requires source /= null
+     * @requires destination /= null
+     * @ensures source is empty
+     */
+    private static void restoreEntries(WalletLedgerKernel source,
+            WalletLedgerKernel destination) {
+        while (source.entryCount() > 0) {
+            LedgerEntry entry = source.removeAnyEntry();
+            destination.addEntry(entry.id(), entry.amountCents(),
+                    entry.currency(), entry.type());
+        }
+    }
+
+    /**
      * Reports whether two entries have the same observable state.
      *
      * @param first first entry
@@ -38,47 +62,45 @@ public abstract class WalletLedgerSecondary implements WalletLedger {
     }
 
     /**
-     * Generates an unused entry id for a new transaction.
+     * Returns a deterministic text form for one entry.
      *
-     * @param prefix transaction prefix
-     * @return an id not currently in this ledger
+     * @param entry ledger entry
+     * @return text form of entry
      */
-    private String nextGeneratedId(String prefix) {
+    private static String entryText(LedgerEntry entry) {
+        return entry.id() + "|" + entry.type() + "|" + entry.currency() + "|"
+                + entry.amountCents();
+    }
+
+    /**
+     * Returns a fresh id not currently used in this ledger.
+     *
+     * @return unused entry id
+     * @ensures result is not empty and not already in this
+     */
+    private String freshEntryId() {
         int suffix = this.entryCount() + 1;
-        String candidate = prefix + "-" + suffix;
-        while (this.hasEntry(candidate)) {
+        String id = "E" + suffix;
+        while (this.hasEntry(id)) {
             suffix++;
-            candidate = prefix + "-" + suffix;
+            id = "E" + suffix;
         }
-        return candidate;
+        return id;
     }
 
     @Override
     public final int balanceCents(String currency) {
+        assert currency != null : "Violation of: currency is not null";
         assert this.isValidCurrency(currency)
                 : "Violation of: isValidCurrency(currency)";
 
-        int balance = 0;
-        WalletLedgerKernel temp = this.newInstance();
-        while (this.entryCount() > 0) {
-            LedgerEntry entry = this.removeAnyEntry();
-            temp.addEntry(entry.id(), entry.amountCents(), entry.currency(),
-                    entry.type());
-            if (entry.currency().equals(currency)) {
-                if (entry.type() == EntryType.CREDIT) {
-                    balance += entry.amountCents();
-                } else {
-                    balance -= entry.amountCents();
-                }
-            }
-        }
-        this.transferFrom(temp);
-        return balance;
+        return this.totalCreditsCents(currency) - this.totalDebitsCents(currency);
     }
 
     @Override
     public final boolean hasSufficientFunds(int debitCents, String currency) {
         assertPositiveAmount(debitCents);
+        assert currency != null : "Violation of: currency is not null";
         assert this.isValidCurrency(currency)
                 : "Violation of: isValidCurrency(currency)";
 
@@ -88,62 +110,70 @@ public abstract class WalletLedgerSecondary implements WalletLedger {
     @Override
     public final void deposit(int amountCents, String currency) {
         assertPositiveAmount(amountCents);
+        assert currency != null : "Violation of: currency is not null";
         assert this.isValidCurrency(currency)
                 : "Violation of: isValidCurrency(currency)";
 
-        this.addEntry(this.nextGeneratedId("dep"), amountCents, currency,
+        this.addEntry(this.freshEntryId(), amountCents, currency,
                 EntryType.CREDIT);
     }
 
     @Override
     public final void withdraw(int amountCents, String currency) {
         assertPositiveAmount(amountCents);
+        assert currency != null : "Violation of: currency is not null";
         assert this.isValidCurrency(currency)
                 : "Violation of: isValidCurrency(currency)";
         assert this.hasSufficientFunds(amountCents, currency)
                 : "Violation of: hasSufficientFunds(amountCents, currency)";
 
-        this.addEntry(this.nextGeneratedId("wd"), amountCents, currency,
+        this.addEntry(this.freshEntryId(), amountCents, currency,
                 EntryType.DEBIT);
     }
 
     @Override
     public final int totalCreditsCents(String currency) {
+        assert currency != null : "Violation of: currency is not null";
         assert this.isValidCurrency(currency)
                 : "Violation of: isValidCurrency(currency)";
 
         int total = 0;
         WalletLedgerKernel temp = this.newInstance();
+
         while (this.entryCount() > 0) {
             LedgerEntry entry = this.removeAnyEntry();
-            temp.addEntry(entry.id(), entry.amountCents(), entry.currency(),
-                    entry.type());
-            if (entry.currency().equals(currency)
-                    && entry.type() == EntryType.CREDIT) {
+            if (entry.type() == EntryType.CREDIT
+                    && entry.currency().equals(currency)) {
                 total += entry.amountCents();
             }
+            temp.addEntry(entry.id(), entry.amountCents(), entry.currency(),
+                    entry.type());
         }
-        this.transferFrom(temp);
+
+        restoreEntries(temp, this);
         return total;
     }
 
     @Override
     public final int totalDebitsCents(String currency) {
+        assert currency != null : "Violation of: currency is not null";
         assert this.isValidCurrency(currency)
                 : "Violation of: isValidCurrency(currency)";
 
         int total = 0;
         WalletLedgerKernel temp = this.newInstance();
+
         while (this.entryCount() > 0) {
             LedgerEntry entry = this.removeAnyEntry();
-            temp.addEntry(entry.id(), entry.amountCents(), entry.currency(),
-                    entry.type());
-            if (entry.currency().equals(currency)
-                    && entry.type() == EntryType.DEBIT) {
+            if (entry.type() == EntryType.DEBIT
+                    && entry.currency().equals(currency)) {
                 total += entry.amountCents();
             }
+            temp.addEntry(entry.id(), entry.amountCents(), entry.currency(),
+                    entry.type());
         }
-        this.transferFrom(temp);
+
+        restoreEntries(temp, this);
         return total;
     }
 
@@ -151,45 +181,38 @@ public abstract class WalletLedgerSecondary implements WalletLedger {
     public final LedgerEntry findById(String id) {
         assertValidId(id);
 
-        LedgerEntry found = null;
-        WalletLedgerKernel temp = this.newInstance();
-        while (this.entryCount() > 0) {
-            LedgerEntry entry = this.removeAnyEntry();
-            temp.addEntry(entry.id(), entry.amountCents(), entry.currency(),
-                    entry.type());
-            if (found == null && entry.id().equals(id)) {
-                found = entry;
-            }
+        LedgerEntry result = null;
+
+        if (this.hasEntry(id)) {
+            result = this.removeEntry(id);
+            this.addEntry(result.id(), result.amountCents(), result.currency(),
+                    result.type());
         }
-        this.transferFrom(temp);
-        return found;
+
+        return result;
     }
 
     @Override
-    public String toString() {
-        StringBuilder result = new StringBuilder("WalletLedger[");
-        boolean first = true;
+    public final String toString() {
+        List<String> entries = new ArrayList<>();
         WalletLedgerKernel temp = this.newInstance();
+
         while (this.entryCount() > 0) {
             LedgerEntry entry = this.removeAnyEntry();
+            entries.add(entryText(entry));
             temp.addEntry(entry.id(), entry.amountCents(), entry.currency(),
                     entry.type());
-            if (!first) {
-                result.append(", ");
-            }
-            result.append(entry.id()).append(": ").append(entry.type())
-                    .append(" ").append(entry.amountCents()).append(" ")
-                    .append(entry.currency());
-            first = false;
         }
-        this.transferFrom(temp);
-        result.append("]");
-        return result.toString();
+
+        restoreEntries(temp, this);
+        Collections.sort(entries);
+
+        return "WalletLedger[" + String.join(", ", entries) + "]";
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
+    public final boolean equals(Object obj) {
+        if (this == obj) {
             return true;
         }
         if (!(obj instanceof WalletLedger)) {
@@ -203,30 +226,20 @@ public abstract class WalletLedgerSecondary implements WalletLedger {
 
         boolean same = true;
         WalletLedgerKernel temp = this.newInstance();
+
         while (same && this.entryCount() > 0) {
             LedgerEntry entry = this.removeAnyEntry();
             temp.addEntry(entry.id(), entry.amountCents(), entry.currency(),
                     entry.type());
             same = sameEntry(entry, other.findById(entry.id()));
         }
-        this.transferFrom(temp);
+
+        restoreEntries(temp, this);
         return same;
     }
 
     @Override
-    public int hashCode() {
-        int result = 0;
-        WalletLedgerKernel temp = this.newInstance();
-        while (this.entryCount() > 0) {
-            LedgerEntry entry = this.removeAnyEntry();
-            temp.addEntry(entry.id(), entry.amountCents(), entry.currency(),
-                    entry.type());
-            result += entry.id().hashCode();
-            result += Integer.hashCode(entry.amountCents());
-            result += entry.currency().hashCode();
-            result += entry.type().hashCode();
-        }
-        this.transferFrom(temp);
-        return result;
+    public final int hashCode() {
+        return this.toString().hashCode();
     }
 }

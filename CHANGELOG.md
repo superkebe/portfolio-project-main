@@ -11,6 +11,12 @@ the following form: YYYY.0M.0D.
 - Disabled an aspect of the coderunner extension
 - Fixed broken links
 - Disabled AI features globally
+- Added a local `components.standard.Standard` interface so the wallet-ledger
+  component can compile without the external components jar
+- Added `WalletLedger1L` as the concrete kernel implementation for the
+  wallet-ledger component
+- Resolved merge conflicts in `WalletLedgerSecondary` and unified the secondary
+  method implementation
 
 ## [2026.03.12]
 
@@ -96,3 +102,26 @@ the following form: YYYY.0M.0D.
 [unreleased]: https://github.com/jrg94/portfolio-project/compare/v2024.08.07...HEAD
 [2024.08.07]: https://github.com/jrg94/portfolio-project/compare/v2024.01.07...v2024.08.07
 [2024.01.07]: https://github.com/jrg94/portfolio-project/releases/tag/v2024.01.07
+
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on Keep a Changelog,
+and this project adheres to Calendar Versioning.
+
+## 2026.03.12
+
+### Added
+
+- Designed and implemented the abstract class for the WalletLedger component
+- Added secondary method implementations for deposit, withdraw, transferTo, isEmpty, and lastTransaction
+- Added common Object method implementations for toString, equals, and hashCode
+
+### Updated
+
+- Refined the WalletLedger kernel design to better support design-by-contract
+- Added precondition-check support through canWithdraw
+- Updated the transaction-access design so object methods can be implemented using kernel methods only
