@@ -12,6 +12,22 @@ the following form: YYYY.0M.0D.
 - Fixed broken links
 - Disabled AI features globally
 
+## [2026.03.12]
+
+### Added
+
+- Added `WalletLedgerSecondary` to implement all enhanced wallet-ledger
+  operations using only kernel and `Standard` methods
+- Added common object methods for the component abstraction, including
+  `toString()`, `equals()`, and `hashCode()`
+
+### Changed
+
+- Updated the wallet-ledger design to generate transaction ids inside the
+  secondary layer instead of depending on representation-specific state
+- Updated secondary-method logic to explicitly check client preconditions before
+  calling kernel methods such as `addEntry`, `removeAnyEntry`, and `findById`
+
 ## [2024.12.30]
 
 - Added table-based rubrics to all 6 parts of the project

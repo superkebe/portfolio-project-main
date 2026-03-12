@@ -1,18 +1,16 @@
 import components.standard.Standard;
 
 /**
- * Kernel interface for the WalletLedger component.
+ * Kernel interface for WalletLedger.
  *
- * The kernel provides only the minimal operations required to model a wallet
- * ledger as a collection of credit and debit entries.
- *
- * The enhanced interface WalletLedger will layer secondary operations such as
- * balance computation and safety checks on top of this kernel.
+ * The kernel provides the minimal operations required to model a
+ * wallet ledger as a collection of credit and debit entries.
  */
-public interface WalletLedgerKernel extends Standard<WalletLedgerKernel> {
+public interface WalletLedgerKernel
+        extends Standard<WalletLedgerKernel> {
 
     /**
-     * Entry type for the ledger.
+     * Entry types for the ledger.
      */
     enum EntryType {
         CREDIT,
@@ -20,23 +18,20 @@ public interface WalletLedgerKernel extends Standard<WalletLedgerKernel> {
     }
 
     /**
-     * A single immutable ledger entry returned to clients.
-     *
-     * This is a client side value type used by kernel operations that remove and
-     * return entries.
+     * Client-visible immutable ledger entry.
      */
     interface LedgerEntry {
 
         /**
-         * Returns the unique id for this entry.
+         * Returns the unique id of this entry.
          *
-         * @return id for this entry
+         * @return id of this entry
          * @ensures id is not empty
          */
         String id();
 
         /**
-         * Returns the positive amount in cents for this entry.
+         * Returns the positive amount in cents.
          *
          * @return amount in cents
          * @ensures amountCents > 0
@@ -44,10 +39,10 @@ public interface WalletLedgerKernel extends Standard<WalletLedgerKernel> {
         int amountCents();
 
         /**
-         * Returns the 3 letter uppercase currency code for this entry.
+         * Returns the 3-letter uppercase currency code.
          *
          * @return currency code
-         * @ensures currency has length 3 and uses uppercase letters
+         * @ensures currency length is 3 and uppercase
          */
         String currency();
 
@@ -61,58 +56,77 @@ public interface WalletLedgerKernel extends Standard<WalletLedgerKernel> {
     }
 
     /**
+     * Reports whether the given id currently identifies an entry in this
+     * ledger.
+     *
+     * @param id candidate entry id
+     * @return true iff an entry with {@code id} exists in this
+     *
+     * @requires id is not empty
+     * @ensures result = (an entry with id exists in this)
+     * @ensures this is unchanged
+     */
+    boolean hasEntry(String id);
+
+    /**
+     * Reports whether the given currency code is valid for this component.
+     *
+     * @param currency candidate currency code
+     * @return true iff currency is a 3-letter uppercase code
+     *
+     * @ensures result = (currency is a 3-letter uppercase code)
+     * @ensures this is unchanged
+     */
+    boolean isValidCurrency(String currency);
+
+    /**
      * Adds a new ledger entry.
      *
-     * @param id
-     *            unique entry id
-     * @param amountCents
-     *            positive amount in cents
-     * @param currency
-     *            3 letter uppercase currency code
-     * @param type
-     *            CREDIT or DEBIT
+     * @param id unique entry id
+     * @param amountCents positive amount in cents
+     * @param currency 3-letter uppercase currency code
+     * @param type credit or debit
+     *
      * @updates this
      * @requires id is not empty
      * @requires amountCents > 0
-     * @requires currency is a 3 letter uppercase code
+     * @requires isValidCurrency(currency)
      * @requires type is not null
-     * @requires there is no existing entry in this with id
-     * @ensures this contains an entry with the given fields
+     * @requires not hasEntry(id)
+     * @ensures this contains a new entry with given fields
      */
-    void addEntry(String id, int amountCents, String currency, EntryType type);
+    void addEntry(String id, int amountCents,
+                  String currency, EntryType type);
 
     /**
-     * Removes the entry with the given id and returns it.
+     * Removes and returns the entry with the given id.
      *
-     * @param id
-     *            id of the entry to remove
-     * @return the removed entry
+     * @param id id to remove
+     * @return removed entry
+     *
      * @updates this
      * @requires id is not empty
-     * @requires this contains an entry with id
-     * @ensures this no longer contains an entry with id
-     * @ensures removeEntry.id equals id
+     * @requires hasEntry(id)
+     * @ensures entry with id is removed from this
      */
     LedgerEntry removeEntry(String id);
 
     /**
-     * Removes and returns any entry from this ledger.
+     * Removes and returns any entry.
      *
-     * This method exists to support safe traversal patterns where the client
-     * temporarily removes entries, processes them, and then restores them.
+     * @return some entry previously in this
      *
-     * @return one entry formerly in this
      * @updates this
      * @requires this is not empty
-     * @ensures this has one fewer entry than before
+     * @ensures this has one fewer entry
      */
     LedgerEntry removeAnyEntry();
 
     /**
-     * Returns the number of entries in this ledger.
+     * Returns number of entries.
      *
      * @return number of entries
-     * @ensures entryCount is at least 0
+     * @ensures result >= 0
      */
     int entryCount();
 }
