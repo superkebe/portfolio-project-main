@@ -40,6 +40,10 @@ public abstract class WalletLedgerSecondary implements WalletLedger {
      */
     private static void restoreEntries(WalletLedgerKernel source,
             WalletLedgerKernel destination) {
+
+        assert source != null : "Violation of: source /= null";
+        assert destination != null : "Violation of: destination /= null";
+
         while (source.entryCount() > 0) {
             LedgerEntry entry = source.removeAnyEntry();
             destination.addEntry(entry.id(), entry.amountCents(),
@@ -81,10 +85,12 @@ public abstract class WalletLedgerSecondary implements WalletLedger {
     private String freshEntryId() {
         int suffix = this.entryCount() + 1;
         String id = "E" + suffix;
+
         while (this.hasEntry(id)) {
             suffix++;
             id = "E" + suffix;
         }
+
         return id;
     }
 
@@ -94,11 +100,14 @@ public abstract class WalletLedgerSecondary implements WalletLedger {
         assert this.isValidCurrency(currency)
                 : "Violation of: isValidCurrency(currency)";
 
-        return this.totalCreditsCents(currency) - this.totalDebitsCents(currency);
+        return this.totalCreditsCents(currency)
+                - this.totalDebitsCents(currency);
     }
 
     @Override
-    public final boolean hasSufficientFunds(int debitCents, String currency) {
+    public final boolean hasSufficientFunds(int debitCents,
+            String currency) {
+
         assertPositiveAmount(debitCents);
         assert currency != null : "Violation of: currency is not null";
         assert this.isValidCurrency(currency)
@@ -142,12 +151,14 @@ public abstract class WalletLedgerSecondary implements WalletLedger {
 
         while (this.entryCount() > 0) {
             LedgerEntry entry = this.removeAnyEntry();
+
             if (entry.type() == EntryType.CREDIT
                     && entry.currency().equals(currency)) {
                 total += entry.amountCents();
             }
-            temp.addEntry(entry.id(), entry.amountCents(), entry.currency(),
-                    entry.type());
+
+            temp.addEntry(entry.id(), entry.amountCents(),
+                    entry.currency(), entry.type());
         }
 
         restoreEntries(temp, this);
@@ -165,12 +176,14 @@ public abstract class WalletLedgerSecondary implements WalletLedger {
 
         while (this.entryCount() > 0) {
             LedgerEntry entry = this.removeAnyEntry();
+
             if (entry.type() == EntryType.DEBIT
                     && entry.currency().equals(currency)) {
                 total += entry.amountCents();
             }
-            temp.addEntry(entry.id(), entry.amountCents(), entry.currency(),
-                    entry.type());
+
+            temp.addEntry(entry.id(), entry.amountCents(),
+                    entry.currency(), entry.type());
         }
 
         restoreEntries(temp, this);
@@ -182,13 +195,20 @@ public abstract class WalletLedgerSecondary implements WalletLedger {
         assertValidId(id);
 
         LedgerEntry result = null;
+        WalletLedgerKernel temp = this.newInstance();
 
-        if (this.hasEntry(id)) {
-            result = this.removeEntry(id);
-            this.addEntry(result.id(), result.amountCents(), result.currency(),
-                    result.type());
+        while (this.entryCount() > 0) {
+            LedgerEntry entry = this.removeAnyEntry();
+
+            if (entry.id().equals(id)) {
+                result = entry;
+            }
+
+            temp.addEntry(entry.id(), entry.amountCents(),
+                    entry.currency(), entry.type());
         }
 
+        restoreEntries(temp, this);
         return result;
     }
 
@@ -200,8 +220,9 @@ public abstract class WalletLedgerSecondary implements WalletLedger {
         while (this.entryCount() > 0) {
             LedgerEntry entry = this.removeAnyEntry();
             entries.add(entryText(entry));
-            temp.addEntry(entry.id(), entry.amountCents(), entry.currency(),
-                    entry.type());
+
+            temp.addEntry(entry.id(), entry.amountCents(),
+                    entry.currency(), entry.type());
         }
 
         restoreEntries(temp, this);
@@ -215,11 +236,13 @@ public abstract class WalletLedgerSecondary implements WalletLedger {
         if (this == obj) {
             return true;
         }
+
         if (!(obj instanceof WalletLedger)) {
             return false;
         }
 
         WalletLedger other = (WalletLedger) obj;
+
         if (this.entryCount() != other.entryCount()) {
             return false;
         }
@@ -229,8 +252,10 @@ public abstract class WalletLedgerSecondary implements WalletLedger {
 
         while (same && this.entryCount() > 0) {
             LedgerEntry entry = this.removeAnyEntry();
-            temp.addEntry(entry.id(), entry.amountCents(), entry.currency(),
-                    entry.type());
+
+            temp.addEntry(entry.id(), entry.amountCents(),
+                    entry.currency(), entry.type());
+
             same = sameEntry(entry, other.findById(entry.id()));
         }
 
