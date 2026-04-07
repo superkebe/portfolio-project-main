@@ -1,33 +1,61 @@
 # SRC Folder
 
-This README exists, so the folder shows up in source control like git. This
-file is not needed and can be safely deleted. 
+This folder contains the source code for the WalletLedger component.
 
-However, for completeness, this folder exists for the purpose of storing your
-source code. As a reminder, by discipline, this folder must contain at least
-four Java files:
+The component is implemented using the OSU CSE component design discipline, which separates functionality into kernel, enhanced interface, secondary implementation, and kernel implementation layers.
 
-1. The Kernel Interface (e.g., `NaturalNumberKernel`)
-2. The Enhance Interface (e.g., `NaturalNumber`)
-3. The Secondary Abstract Class (e.g., `NaturalNumberSecondary`)
-4. A Kernel Implementation (e.g., `NaturalNumber1L`)
+Component Structure
 
-Ideally, you will want to package your component appropriately as well.
-That means not just dumping your source code in the `src` folder but actually
-creating nested folders for grouping similar components. For example, the
-`NaturalNumber` API can be found in the `src/components/naturalnumber` package.
-In other words, you would need to nest a `components` folder in the `src` 
-folder. Then, nest the `naturalnumber` folder in the `components` folder.
-The result would be the following directory structure:
+The WalletLedger component consists of the following files
 
-```
-src
-└───components
-    └───naturalnumber
-            NaturalNumber.java
-            NaturalNumber1L.java
-            NaturalNumberKernel.java
-            NaturalNumberSecondary.java
-```
+WalletLedgerKernel
+Defines the minimal set of core operations required to represent a ledger
+WalletLedger
+Defines enhanced operations such as balance, deposit, withdraw, and totals
+WalletLedgerSecondary
+Implements all enhanced methods using only kernel and Standard methods
+WalletLedger1L
+Provides the concrete kernel implementation using a LinkedHashMap representation
+Design Overview
 
-If done correctly, your portfolio can be bundled as its own `.jar`.
+The component models a financial ledger that tracks credit and debit transactions across multiple currencies.
+
+Each transaction includes
+
+a unique id
+a positive amount in cents
+a 3 letter uppercase currency code
+a type indicating CREDIT or DEBIT
+
+Key design decisions include
+
+using a map-based representation for efficient lookup and updates
+storing amounts in integer cents to avoid floating point precision errors
+maintaining immutability of ledger entries
+enforcing correctness through assertions and method contracts
+Representation
+
+The ledger is internally represented using a LinkedHashMap that maps entry ids to immutable ledger entries.
+
+This representation provides
+
+efficient insertion and removal
+fast lookup by id
+preservation of insertion order for transaction history
+Organization
+
+All source files in this folder follow a clear separation of responsibilities based on component design principles.
+
+The structure can be extended into a package hierarchy such as
+
+components.walletledger
+
+to support modularity and reuse in larger systems.
+
+Goal
+
+The goal of this design is to ensure
+
+correctness through well-defined contracts and invariants
+maintainability through clear abstraction layers
+extensibility for future financial and wallet-based applications
