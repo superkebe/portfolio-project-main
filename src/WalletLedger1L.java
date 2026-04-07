@@ -2,21 +2,27 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Kernel implementation of {@link WalletLedger} backed by a map.
+ * Kernel implementation of WalletLedger.
  *
- * @convention
- * [entries is not null] and
- * [every key in entries is non-null and not blank] and
- * [every mapped value is non-null] and
- * [for every key k in entries, entries.get(k).id().equals(k)] and
- * [every mapped entry has amountCents() > 0] and
- * [every mapped entry has a valid 3-letter uppercase currency] and
- * [every mapped entry has non-null type]
+ * Representation:
+ * This component is represented by a LinkedHashMap mapping entry ids
+ * to immutable LedgerEntry objects.
  *
- * @correspondence
- * this = the wallet ledger whose entries are exactly the values stored in
- * this.entries, where each map key is the unique id of its associated entry
+ * Convention:
+ * - entries is not null
+ * - every key is non null and not blank
+ * - every mapped entry is non null
+ * - each key equals the id stored in its mapped entry
+ * - every amount is positive
+ * - every currency is a valid 3 letter uppercase code
+ * - every type is CREDIT or DEBIT
+ *
+ * Correspondence:
+ * This represents a wallet ledger where each map entry corresponds
+ * to one transaction. Keys are unique ids and values are the
+ * transaction data.
  */
+
 public final class WalletLedger1L extends WalletLedgerSecondary {
 
     /**
