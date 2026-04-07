@@ -3,6 +3,19 @@ import java.util.Map;
 
 /**
  * Kernel implementation of {@link WalletLedger} backed by a map.
+ *
+ * @convention
+ * [entries is not null] and
+ * [every key in entries is non-null and not blank] and
+ * [every mapped value is non-null] and
+ * [for every key k in entries, entries.get(k).id().equals(k)] and
+ * [every mapped entry has amountCents() > 0] and
+ * [every mapped entry has a valid 3-letter uppercase currency] and
+ * [every mapped entry has non-null type]
+ *
+ * @correspondence
+ * this = the wallet ledger whose entries are exactly the values stored in
+ * this.entries, where each map key is the unique id of its associated entry
  */
 public final class WalletLedger1L extends WalletLedgerSecondary {
 
@@ -10,13 +23,51 @@ public final class WalletLedger1L extends WalletLedgerSecondary {
      * Immutable ledger entry implementation.
      */
     private static final class LedgerEntryRecord implements LedgerEntry {
+
+        /**
+         * Entry id.
+         */
         private final String id;
+
+        /**
+         * Positive amount in cents.
+         */
         private final int amountCents;
+
+        /**
+         * 3-letter uppercase currency code.
+         */
         private final String currency;
+
+        /**
+         * Entry type.
+         */
         private final EntryType type;
 
+        /**
+         * Constructs a ledger entry.
+         *
+         * @param id
+         *            the entry id
+         * @param amountCents
+         *            the amount in cents
+         * @param currency
+         *            the currency code
+         * @param type
+         *            the entry type
+         * @requires id is not empty and amountCents > 0 and
+         *           currency is a valid currency and type is not null
+         * @ensures this.id() = id and this.amountCents() = amountCents and
+         *          this.currency() = currency and this.type() = type
+         */
         private LedgerEntryRecord(String id, int amountCents, String currency,
                 EntryType type) {
+            assert id != null && !id.isBlank() : "Violation of: id is not empty";
+            assert amountCents > 0 : "Violation of: amountCents > 0";
+            assert isValidCurrencyCode(currency)
+                    : "Violation of: currency is a valid currency";
+            assert type != null : "Violation of: type is not null";
+
             this.id = id;
             this.amountCents = amountCents;
             this.currency = currency;
@@ -44,31 +95,13 @@ public final class WalletLedger1L extends WalletLedgerSecondary {
         }
     }
 
-    /*
-     * Representation:
-     *
-     * $this.entries maps each entry id to exactly one immutable ledger entry
-     * having the same id.
-     *
-     * Convention:
-     *
-     * - this.entries is not null
-     * - every key in this.entries is non-null and not blank
-     * - every mapped entry is non-null
-     * - each mapped entry has positive amount, valid currency, and non-null type
-     * - each map key equals the id stored in its mapped entry
+    /**
+     * Private representation.
      */
     private Map<String, LedgerEntry> entries;
 
     /**
-     * Creates an empty ledger.
-     */
-    public WalletLedger1L() {
-        this.createNewRep();
-    }
-
-    /**
-     * Initializes the representation.
+     * Creates a new empty representation.
      */
     private void createNewRep() {
         this.entries = new LinkedHashMap<>();
@@ -77,7 +110,8 @@ public final class WalletLedger1L extends WalletLedgerSecondary {
     /**
      * Checks whether id satisfies the kernel contract.
      *
-     * @param id candidate id
+     * @param id
+     *            candidate id
      */
     private static void assertValidId(String id) {
         assert id != null && !id.isBlank() : "Violation of: id is not empty";
@@ -86,10 +120,43 @@ public final class WalletLedger1L extends WalletLedgerSecondary {
     /**
      * Checks whether amount satisfies the kernel contract.
      *
-     * @param amountCents amount in cents
+     * @param amountCents
+     *            amount in cents
      */
     private static void assertPositiveAmount(int amountCents) {
         assert amountCents > 0 : "Violation of: amountCents > 0";
+    }
+
+    /**
+     * Reports whether the given currency string is a valid 3-letter uppercase
+     * code.
+     *
+     * @param currency
+     *            candidate currency
+     * @return true iff currency is valid
+     * @ensures isValidCurrencyCode =
+     *          (currency is a 3-letter uppercase code)
+     */
+    private static boolean isValidCurrencyCode(String currency) {
+        if (currency == null || currency.length() != 3) {
+            return false;
+        }
+        for (int i = 0; i < currency.length(); i++) {
+            char c = currency.charAt(i);
+            if (c < 'A' || c > 'Z') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * No-argument constructor.
+     *
+     * @ensures this is empty
+     */
+    public WalletLedger1L() {
+        this.createNewRep();
     }
 
     @Override
@@ -122,18 +189,7 @@ public final class WalletLedger1L extends WalletLedgerSecondary {
 
     @Override
     public boolean isValidCurrency(String currency) {
-        if (currency == null || currency.length() != 3) {
-            return false;
-        }
-
-        for (int i = 0; i < currency.length(); i++) {
-            char current = currency.charAt(i);
-            if (current < 'A' || current > 'Z') {
-                return false;
-            }
-        }
-
-        return true;
+        return isValidCurrencyCode(currency);
     }
 
     @Override
