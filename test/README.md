@@ -1,10 +1,14 @@
-# Test Folder
+README.md
 
-This README exists, so the folder shows up in source control like git. This
-file is not needed and can be safely deleted. 
+This folder contains JUnit test files for the WalletLedger component.
 
-However, for completeness, this folder exists for storing JUnit test files.
-Test folders can be much less structured than source folders, but I would
-generally recommend following the same directory structure as the source folder.
-In other words, include the package paths, such as 
-`components/naturalnumber/...`.
+The purpose of these tests is to verify that the component behaves correctly according to its contracts and maintains its representation invariant.
+
+The tests cover
+
+Kernel methods such as addEntry, removeEntry, removeAnyEntry, and entryCount
+Enhanced methods such as deposit, withdraw, balanceCents, totalCreditsCents, and totalDebitsCents
+Standard methods such as clear, newInstance, and transferFrom
+Edge cases such as empty ledger behavior and multi-currency handling
+
+The test structure follows the same logical organization as the source code to keep the project consistent and easy to navigate.
